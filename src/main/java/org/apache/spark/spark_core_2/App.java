@@ -14,7 +14,7 @@ public class App {
 		  
 	    String locationFile = "/home/tom/IP2LOCATION-LITE-DB3.CSV";
 	    //String logFile = "/home/tom/rddtestweb.log";
-	    String logFile = "hdfs://cdh-nn2/user/tom/weblogc/*"; 
+	    String logFile = "hdfs://cdh-nn2/user/tom/weblog/*"; 
 	    //Should be some file on your system
 	    
 	    SparkConf conf = new SparkConf().setAppName("Simple Application").setMaster("local");

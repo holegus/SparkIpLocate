@@ -36,29 +36,33 @@ public class App {
 	    	}
 	    });
 	    
-	    // Java 7
 	    JavaRDD<List<String>> logLine = logData.map(new Function<String, List<String>>() {
 	    	public List<String> call(String s) {
 	    		return Arrays.asList(s.split(" ")[8]);
 	    	}
 	    }).distinct();
 	    
-	   JavaRDD<List<Long>> ipSplit = logLine.map(new Function<List<String>, List<Long>>() {
+	    //System.out.println(logLine.collect());
+	    
+	    JavaRDD<List<Long>> ipSplit = logLine.map(new Function<List<String>, List<Long>>() {
 		   public List<Long> call(List<String> s) {
 	    		List<Long> ipNumbers = new ArrayList<Long>();
+	    		long summary = 0L;
 			    for (String ip : s) {
 	    			List<String> temp = Arrays.asList(ip.split("\\."));
-	    			long summary = 6777216 * (long)Integer.parseInt(temp.get(0)) + 65536 * (long)Integer.parseInt(temp.get(1)) + 256 * (long)Integer.parseInt(temp.get(2)) + (long)Integer.parseInt(temp.get(3));
+	    			try {
+	    				summary = 6777216 * (long)Integer.parseInt(temp.get(0)) + 65536 * (long)Integer.parseInt(temp.get(1)) + 256 * (long)Integer.parseInt(temp.get(2)) + (long)Integer.parseInt(temp.get(3));
+	    			} catch (NumberFormatException e) {
+	    				summary = 1968L;
+	    			}	
 	    			ipNumbers.add(summary);
 	    		}
 			   return ipNumbers; 
-	   	}
-	   }); 
-	   	       
+	   	  }
+	    }); 
+	   
 	    //System.out.println(logData.collect());
-	    System.out.println(logLine.collect());
-	    System.out.println(ipSplit.collect());
-	    
+	    System.out.println(ipSplit.collect()); 
 	    sc.stop();
 	  }
 }

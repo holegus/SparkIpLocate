@@ -17,18 +17,31 @@ public class App {
 		
 		//Regex to catch IPv6 - the string will include at least one alpha character.
 		Pattern p = Pattern.compile("[a-zA-Z]");
+		//Regex to deal with csv geo-mapping file.
+		//Pattern geomap = Pattern.compile("(\",\")");
 		  
 	    String locationFile = "/home/tom/IP2LOCATION-LITE-DB3.CSV";
-	    //String logFile = "/home/tom/rddtestweb.log";
-	    String logFile = "hdfs://cdh-nn2/user/tom/weblog/*"; 
+	    String logFile = "/home/tom/rddtestweb.log";
+	    //String logFile = "hdfs://cdh-nn2/user/tom/weblog/*"; 
 	    //Should be some file on your system
 	    
-	    SparkConf conf = new SparkConf().setAppName("Simple Application").setMaster("yarn-client");
+	    SparkConf conf = new SparkConf().setAppName("Simple Application").setMaster("local");
 	    JavaSparkContext sc = new JavaSparkContext(conf);
 	    
 	    Logger rootLogger = Logger.getRootLogger();
 	    rootLogger.setLevel(Level.ERROR);
+	        
 	    JavaRDD<String> locationData = sc.textFile(locationFile);
+	    
+	    //Create RDD wit list of geolocation - for future compare web log IP number with begin & end IP numbers from this list.
+	    JavaRDD<List<String>> geoLocation = locationData.map(new Function <String, List<String>>() {
+	    	public List<String> call(String st) {
+	    		//System.out.println(st.substring(1, st.length()-1));
+	    		
+	    		return Arrays.asList(st.substring(1, st.length()-1).split("(\",\")"));
+	    	}
+	    }); 
+	   
 	    //Read raw log file - may include comment with "#" at the line beginning. 
 	    JavaRDD<String> logDataRaw = sc.textFile(logFile);
 	    //Filter out "#" lines.
@@ -47,8 +60,6 @@ public class App {
 	    		return Arrays.asList(s.split(" ")[8]);
 	    	}
 	    }).distinct();
-	    
-	    //System.out.println(logLine.collect());
 	    
 	    JavaRDD<List<Long>> ipSplit = logLine.map(new Function<List<String>, List<Long>>() {
 		   public List<Long> call(List<String> s) {
@@ -80,8 +91,9 @@ public class App {
 	   	  }
 	    }); 
 	   
-	    //System.out.println(logData.collect());
-	    ipSplit.saveAsTextFile("/home/tom/Documents/IPstring.txt"); 
+	    //System.out.println(geoLocation.);
+	    //geoLocation.saveAsTextFile("/home/tom/Documents/GeoLocation.txt");
+	    //ipSplit.saveAsTextFile("/home/tom/Documents/IPstring.txt"); 
 	    sc.stop();
 	  }
 }

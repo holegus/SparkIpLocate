@@ -32,7 +32,7 @@ public class Anomaly {
 	public static void main(String[] args) {
 		
 		//Initiate the average for container search occurrence.
-		int average = 0;
+		final int average = 1000;
 	
 		//Web logs are aggregated in Hadoop HDFS folder	
 		String logFile = "hdfs://cdh-nn2/user/tom/weblog/*"; 
@@ -80,14 +80,26 @@ public class Anomaly {
 		});
 		  
 		//Reduce by container number and count all "1" for each container - create RDD with pair ,container number, total>
-		JavaPairRDD <String, Integer> reducedContainers = containers.reduceByKey(new Function2<Integer, Integer, Integer>() {
+		JavaPairRDD<String, Integer> reducedContainers = containers.reduceByKey(new Function2<Integer, Integer, Integer>() {
 			public Integer call(Integer count0, Integer count1) {
 				return Integer.valueOf(count0.intValue() + count1.intValue());
 			}
 		});
 		
+		JavaPairRDD<String, Integer> anomaly = reducedContainers.filter(new Function<Tuple2<String, Integer>, Boolean>() {
+
+			@Override
+			public Boolean call(Tuple2<String, Integer> anomalyContainer) throws Exception {
+				if (anomalyContainer._2() > average) {
+					return true;
+				} else {
+				return false;
+				}
+			}
+
+		});
 		//Print the result to the client's console - for developer purpose only. Can be sent to file as well.
-		System.out.println(reducedContainers.count());
+		System.out.println(anomaly.collect());
 		
 		//Close SparkContext to avoid the memory leak.
 		sc.close();

@@ -3,6 +3,8 @@ package org.apache.spark.spark_core_2;
 import org.apache.spark.api.java.*;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.api.java.function.VoidFunction;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -42,6 +44,7 @@ public class App {
 	    	}
 	    }); 
 	   
+	    geoLocation.cache();
 	    //Read raw log file - may include comment with "#" at the line beginning. 
 	    JavaRDD<String> logDataRaw = sc.textFile(logFile);
 	    //Filter out "#" lines.
@@ -90,7 +93,16 @@ public class App {
 			   return ipNumbers; 
 	   	  }
 	    }); 
-	   
+	    /* ipSplit.foreach(new VoidFunction<List<Long>>() {
+	    	public void call(List<Long> line) {
+	    		JavaRDD<List<String>> test = geoLocation.map(new Function<List<String>>, List<String>>() {
+	    			public List<String> call(List<String> pair) {
+	    				
+	    			}
+	    			
+	    		});
+	    	}
+	    }); */
 	    //System.out.println(geoLocation.);
 	    //geoLocation.saveAsTextFile("/home/tom/Documents/GeoLocation.txt");
 	    //ipSplit.saveAsTextFile("/home/tom/Documents/IPstring.txt"); 

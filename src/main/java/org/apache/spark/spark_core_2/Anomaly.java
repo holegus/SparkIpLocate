@@ -1,6 +1,7 @@
 package org.apache.spark.spark_core_2;
 
 import org.apache.spark.api.java.*;
+import org.apache.spark.Accumulator;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.api.java.function.Function2;
@@ -22,24 +23,22 @@ import org.apache.log4j.Logger;
 /*Shipping company web site allows their clients to track container by its number. 
 Those searches are been recording in the web site logs.
 This program browsing web server logs for container numbers and counting the total search per container to find 
-the excessive searches (30% up the calculated average) which points to possible malfunction client search script 
+the excessive searches (3 times more than the calculated average - can be customized) which points to possible malfunction client search script 
 (may leads to website performance impact) or suspected activity for specific container (client is too nervous). 
 The results can be a base for the next action. */
-
 
 public class Anomaly {
 
 	public static void main(String[] args) {
 		
-		//Initiate the average for container search occurrence.
-		final int average = 1000;
-	
 		//Web logs are aggregated in Hadoop HDFS folder	
 		String logFile = "hdfs://cdh-nn2/user/tom/weblog/*"; 
 		    
 		//Initiate SparkContext
 		SparkConf conf = new SparkConf().setAppName("Simple Application").setMaster("local");
 		JavaSparkContext sc = new JavaSparkContext(conf);
+		
+		Accumulator<Integer> accum = sc.accumulator(0);
 		    
 		//Set logs output to error only
 		Logger rootLogger = Logger.getRootLogger();
@@ -86,20 +85,32 @@ public class Anomaly {
 			}
 		});
 		
+		reducedContainers.foreach(new VoidFunction<Tuple2<String,Integer>>() {
+			public void call(Tuple2<String, Integer> unitCount) {
+				accum.add(unitCount._2());
+			}
+		});
+		
+		//Count average number of searches.
+		int value = accum.value();
+		int totalCount = (int) reducedContainers.count();
+		int upAverage = (int)3*(value/totalCount);
+		
+		//Create RDD with containers which have been searched  3 times more than average.  
 		JavaPairRDD<String, Integer> anomaly = reducedContainers.filter(new Function<Tuple2<String, Integer>, Boolean>() {
-
-			@Override
 			public Boolean call(Tuple2<String, Integer> anomalyContainer) throws Exception {
-				if (anomalyContainer._2() > average) {
+				if (anomalyContainer._2() > upAverage) {
 					return true;
 				} else {
 				return false;
 				}
 			}
-
 		});
+		
+		int anomalyCount = (int) anomaly.count();
+		
 		//Print the result to the client's console - for developer purpose only. Can be sent to file as well.
-		System.out.println(anomaly.collect());
+		System.out.printf("Anomaly containers: %d from total containers %d", anomalyCount, totalCount);
 		
 		//Close SparkContext to avoid the memory leak.
 		sc.close();
